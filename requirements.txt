@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────
+# HR-Pulse AI — Requirements
+# Install with: uv pip install -r requirements.txt
+# ─────────────────────────────────────────
+
+# API & Web
+fastapi
+uvicorn[standard]
+streamlit
+
+# Data & ML
+pandas
+scikit-learn
+numpy
+joblib
+
+# Azure AI Language (NER)
+azure-ai-textanalytics
+azure-identity
+
+# Database (Azure SQL)
+sqlalchemy
+pyodbc
+
+# OpenTelemetry (Observability)
+opentelemetry-sdk
+opentelemetry-api
+opentelemetry-instrumentation-fastapi
+opentelemetry-exporter-otlp
+
+# Config & Env
+python-dotenv
+pydantic
+pydantic-settings
+
+# Testing
+pytest
+pytest-asyncio
+httpx
+
+# Linting
+ruff

@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────
+# HR-Pulse AI — .dockerignore
+# ─────────────────────────────────────────
+
+# Secrets & config locaux
+.env
+*.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+.uv/
+
+# Tests & qualité
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.xml
+
+# IDE & OS
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/*.tfvars
+
+# Données brutes
+*.csv
+*.xlsx
+data/
+
+# Logs
+*.log
+logs/
+
+# ML models (optionnel : commenter si tu veux les inclure)
+*.pkl
+*.joblib
+models/

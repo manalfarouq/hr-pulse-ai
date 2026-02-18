@@ -1,0 +1,76 @@
+.history/
+.env/
+venv/
+__pycache__/
+
+# ─────────────────────────────────────────
+# HR-Pulse AI — .gitignore
+# ─────────────────────────────────────────
+
+# ── Secrets ─────────────────────────────
+.env
+*.env.*
+!.env.example
+
+# ── Python ──────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.so
+
+# ── Environnements virtuels ─────────────
+.venv/
+venv/
+env/
+.uv/
+
+# ── Tests & qualité ─────────────────────
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.xml
+
+# ── IDE & OS ────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Terraform ───────────────────────────
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/*.tfvars
+!infra/*.tfvars.example
+
+# ── Docker ──────────────────────────────
+*.tar
+
+# ── Données brutes ───────────────────────
+*.csv
+*.xlsx
+data/
+
+# ── Logs ────────────────────────────────
+*.log
+logs/
+
+# ── ML Models ───────────────────────────
+*.pkl
+*.joblib
+models/
+
+# ── Jupyter ─────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
