@@ -73,7 +73,7 @@ models/
 
 # ── Jupyter ─────────────────────────────
 .ipynb_checkpoints/
-*.ipynb
+
 
 # Secrets - JAMAIS commités
 .env
