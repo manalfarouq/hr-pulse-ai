@@ -74,3 +74,25 @@ models/
 # ── Jupyter ─────────────────────────────
 .ipynb_checkpoints/
 *.ipynb
+
+# Secrets - JAMAIS commités
+.env
+terraform.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Python
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+*.pyc
+
+# Modèles ML
+models/*.pkl
+models/*.joblib
+
+Infrastructure/
+infra/
