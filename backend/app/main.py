@@ -2,9 +2,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database.database import init_db, check_connection
+from .database.database import check_connection, init_db
 from .routes.routes_jobs import router as jobs_router
 from .routes.routes_predict import router as predict_router
+from .routes.routes_auth import router as auth_router
 
 app = FastAPI(title="HR-Pulse API")
 
@@ -31,3 +32,4 @@ def health():
 
 app.include_router(jobs_router)
 app.include_router(predict_router)
+app.include_router(auth_router)
