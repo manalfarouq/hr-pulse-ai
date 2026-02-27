@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     AZURE_LANGUAGE_KEY: str
     MODEL_PATH: str = "models/salary_model.pkl"
     RAW_DATA_PATH: str = "data/raw/jobs.csv"
+    
+    SECRET_KEY: str = "change-me-in-production"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60       
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

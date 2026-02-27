@@ -1,15 +1,12 @@
 # backend/app/database/database.py
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import sessionmaker
 
 from ..core.config import settings
+from backend.app.models.user import Base  # Base unique, déclarée dans user.py
 
 engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 def get_db():
@@ -21,6 +18,10 @@ def get_db():
 
 
 def init_db():
+    # Crée toutes les tables SQLAlchemy (users, etc.)
+    Base.metadata.create_all(bind=engine)
+
+    # Crée la table jobs si elle n'existe pas (non gérée par SQLAlchemy)
     with engine.connect() as conn:
         conn.execute(text("""
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='jobs' AND xtype='U')
