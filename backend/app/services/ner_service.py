@@ -1,22 +1,16 @@
-"""Azure AI Language — Named Entity Recognition"""
-import logging
-
+# backend/app/services/ner_service.py
 from azure.ai.textanalytics import TextAnalyticsClient
 from azure.core.credentials import AzureKeyCredential
 
 from ..core.config import settings
 
-logger = logging.getLogger(__name__)
-
 BATCH_SIZE = 5
 SKILL_CATEGORIES = {"Skill", "Product", "PersonType"}
 
-# Client singleton
 _client: TextAnalyticsClient | None = None
 
 
 def get_client() -> TextAnalyticsClient:
-    """Retourne un client Azure AI Language (singleton)."""
     global _client
     if _client is None:
         _client = TextAnalyticsClient(
@@ -26,18 +20,10 @@ def get_client() -> TextAnalyticsClient:
     return _client
 
 
-def extract_entities(documents: list[str]) -> list[list[dict]]:
-    """
-    Extrait toutes les entités NER pour une liste de textes.
-
-    Args:
-        documents: Liste de descriptions de postes
-
-    Returns:
-        Liste de listes d'entités par document
-    """
+def extract_skills_only(documents: list[str]) -> list[list[str]]:
+    """Retourne pour chaque document la liste des compétences (strings)."""
     client = get_client()
-    all_results: list[list[dict]] = []
+    all_skills = []
 
     for i in range(0, len(documents), BATCH_SIZE):
         batch = documents[i: i + BATCH_SIZE]
@@ -45,34 +31,17 @@ def extract_entities(documents: list[str]) -> list[list[dict]]:
 
         for doc in response:
             if doc.is_error:
-                logger.warning(f"Erreur NER sur un document : {doc.error}")
-                all_results.append([])
+                all_skills.append([])
                 continue
+            skills = [
+                e.text for e in doc.entities
+                if e.category in SKILL_CATEGORIES
+            ]
+            all_skills.append(skills)
 
-            all_results.append([
-                {
-                    "text": e.text,
-                    "category": e.category,
-                    "subcategory": e.subcategory,
-                    "confidence_score": round(e.confidence_score, 3),
-                }
-                for e in doc.entities
-            ])
-
-    return all_results
+    return all_skills
 
 
-def extract_skills_only(documents: list[str]) -> list[list[dict]]:
-    """
-    Filtre uniquement les entités de type Skill / Product.
-
-    Args:
-        documents: Liste de descriptions de postes
-
-    Returns:
-        Liste de compétences extraites par document
-    """
-    return [
-        [e for e in doc_entities if e["category"] in SKILL_CATEGORIES]
-        for doc_entities in extract_entities(documents)
-    ]
+# Alias simple pour compatibilité
+def extraire_competences(text: str) -> list[str]:
+    return extract_skills_only([text])[0]

@@ -1,36 +1,16 @@
-"""Application configuration settings"""
-from pydantic_settings import BaseSettings
-from typing import Optional
+# backend/app/core/config.py
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """
-    Configuration chargée depuis les variables d'environnement.
-    Toutes les valeurs sensibles doivent être dans le fichier .env
-    """
-
-    # App
     PROJECT_NAME: str = "HR-Pulse API"
-
-    # Azure SQL
     DATABASE_URL: str
-
-    # Azure AI Language
     AZURE_LANGUAGE_ENDPOINT: str
     AZURE_LANGUAGE_KEY: str
+    MODEL_PATH: str = "models/salary_model.pkl"
+    RAW_DATA_PATH: str = "data/raw/jobs.csv"
 
-    # ML Model
-    MODEL_PATH: str = "/app/models/salary_model.pkl"
-    DATA_PATH: str = "/app/data/raw/jobs.csv"
-
-    # OpenTelemetry / Jaeger
-    OTEL_EXPORTER_OTLP_ENDPOINT: str = "http://jaeger:4317"
-    OTEL_SERVICE_NAME: str = "hr-pulse-backend"
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()
