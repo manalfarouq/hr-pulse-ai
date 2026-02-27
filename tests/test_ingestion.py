@@ -1,6 +1,5 @@
 # tests/test_ingestion.py
 import pandas as pd
-import pytest
 
 from backend.app.services.ingestion import clean_salary, clean_title, load_and_clean
 

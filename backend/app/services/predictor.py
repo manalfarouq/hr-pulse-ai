@@ -1,7 +1,6 @@
 # backend/app/services/predictor.py
 import pickle
 
-import pandas as pd
 from sklearn.linear_model import Ridge
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline

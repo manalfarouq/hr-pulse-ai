@@ -1,5 +1,4 @@
 # tests/test_predictor.py
-import pytest
 
 from backend.app.services.predictor import predict_salary, train_model
 
