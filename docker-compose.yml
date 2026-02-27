@@ -1,0 +1,32 @@
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # frontend:  ← décommentez quand le frontend sera prêt
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.frontend
+  #   ports:
+  #     - "8501:8501"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - API_URL=http://backend:8000
+  #   depends_on:
+  #     backend:
+  #       condition: service_healthy

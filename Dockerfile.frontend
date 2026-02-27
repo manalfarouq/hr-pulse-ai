@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install uv
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev \
+    && .venv/bin/pip install "altair==4.2.2" "streamlit==1.9.0"
+
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+COPY frontend/ ./frontend/
+
+EXPOSE 8501
+
+CMD ["uv", "run", "streamlit", "run", "frontend/app.py", \
+     "--server.address=0.0.0.0", "--server.port=8501"]
