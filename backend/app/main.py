@@ -6,7 +6,7 @@ from .database.database import init_db, check_connection
 from .routes.routes_jobs import router as jobs_router
 from .routes.routes_predict import router as predict_router
 
-app = FastAPI(title="HR-Pulse API", version="0.1.0")
+app = FastAPI(title="HR-Pulse API")
 
 app.add_middleware(
     CORSMiddleware,
