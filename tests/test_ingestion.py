@@ -1,6 +1,5 @@
 # tests/test_ingestion.py
-import pandas as pd
-from backend.app.services.ingestion import clean_salary, clean_title, load_and_clean
+from backend.app.services.ingestion import clean_salary, clean_title
 
 def test_clean_salary_normal():
     assert clean_salary("$137K-$171K") == 154000.0
