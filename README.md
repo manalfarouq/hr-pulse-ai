@@ -1,76 +1,231 @@
 # HR-Pulse AI
 
-Plateforme d'analyse automatique d'offres d'emploi — Azure AI NER, FastAPI, Streamlit, Terraform, Docker & CI/CD.
+> Plateforme d'analyse automatique d'offres d'emploi — Azure AI NER, FastAPI, Streamlit, Terraform, Docker & CI/CD.
 
 ---
 
-## Résumé du projet
+## Table des matières
 
-C'est un projet fullstack de 2 semaines qui simule une vraie mission en entreprise. L'objectif : automatiser l'analyse d'offres d'emploi pour une startup RH fictive, de bout en bout.
+- [Vue d'ensemble](#vue-densemble)
+- [Architecture](#architecture)
+- [Stack technique](#stack-technique)
+- [Prérequis](#prérequis)
+- [Installation](#installation)
+- [Variables d'environnement](#variables-denvironnement)
+- [Lancer l'application](#lancer-lapplication)
+- [API — Endpoints](#api--endpoints)
+- [Infrastructure Terraform](#infrastructure-terraform)
+- [Tests & Qualité](#tests--qualité)
+- [CI/CD](#cicd)
+- [Structure du projet](#structure-du-projet)
 
-Le pipeline complet part d'un fichier CSV d'offres d'emploi et passe par 7 phases :
+---
 
-**Phase 1 — Infrastructure (Terraform)** : Provisioning sur Azure d'une base SQL et d'un service IA via du code Terraform (pas à la main sur le portail).
+## Vue d'ensemble
 
-**Phase 2 — Data & IA** : Nettoyage du CSV, envoi des descriptions de postes à Azure AI Language pour extraire automatiquement les compétences (ex: "Python", "SQL", "Agile"), et stockage dans la base SQL.
+HR-Pulse AI automatise l'analyse d'offres d'emploi de bout en bout pour une startup RH fictive. Le pipeline part d'un fichier CSV brut et enchaîne : nettoyage des données, extraction de compétences par IA (Azure NER), prédiction salariale par ML, exposition via API REST et interface visuelle.
 
-**Phase 3 — Machine Learning** : Entraînement d'un modèle de régression pour prédire le salaire moyen d'un poste à partir des données.
-
-**Phase 4 — Interfaces** : Exposition via une API FastAPI (backend) et une interface visuelle Streamlit ou NextJS (frontend).
-
-**Phase 5 — Docker** : Conteneurisation avec des Dockerfiles + un docker-compose pour lancer l'appli en une seule commande.
-
-**Phase 6 — Tests** : Tests unitaires avec Pytest pour valider le code.
-
-**Phase 7 — CI/CD (GitHub Actions)** : Automatisation du linting (Ruff/Flake8), des tests et du build Docker à chaque push.
-
-> **Bonus** : Observabilité avec OpenTelemetry + Jaeger pour visualiser les temps de réponse et les erreurs en temps réel.
+```
+CSV brut → Nettoyage → Azure AI NER → Base SQL → API FastAPI → Frontend Streamlit
+                                                ↘ ML (prédiction salaire)
+```
 
 ---
 
 ## Architecture
 
+### Vue globale
+
 ```
-hr-pulse-ai/
-├── infra/              # Terraform (Azure SQL + Azure AI Language)
-├── backend/            # FastAPI + scripts IA/ML
-│   ├── main.py
-│   ├── ingestion.py    # Nettoyage CSV + NER
-│   └── predictor.py    # Modèle ML salaire
-├── frontend/           # Streamlit
-│   └── app.py
-├── tests/              # Pytest
-├── .github/
-│   └── workflows/      # CI GitHub Actions
-├── .env.example
-├── docker-compose.yml
-└── requirements.txt
+┌─────────────────────────────────────────────────────────────────┐
+│                         HR-Pulse AI                             │
+│                                                                 │
+│  ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐  │
+│  │  Streamlit  │────▶│  FastAPI     │────▶│  Azure SQL DB   │  │
+│  │  :8501      │     │  :8000       │     │  (SQLAlchemy)   │  │
+│  └─────────────┘     └──────┬───────┘     └─────────────────┘  │
+│                             │                                   │
+│                    ┌────────┴────────┐                          │
+│                    │                 │                          │
+│            ┌───────▼──────┐  ┌───────▼──────┐                  │
+│            │ Azure AI     │  │ ML Predictor │                  │
+│            │ Language NER │  │ (scikit-learn│                  │
+│            └──────────────┘  └──────────────┘                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Pipeline de données
+
+```
+data/raw/jobs.csv
+        │
+        ▼
+┌───────────────┐
+│  ingestion.py │  Nettoyage + normalisation
+└───────┬───────┘
+        │
+        ▼
+┌───────────────────┐
+│  Azure AI NER     │  Extraction des compétences
+│  (ner_service.py) │  ex: "Python", "SQL", "Agile"
+└───────┬───────────┘
+        │
+        ▼
+┌───────────────┐
+│  Azure SQL DB │  Stockage structuré
+│  Table: jobs  │
+└───────┬───────┘
+        │
+        ▼
+┌───────────────────┐
+│  predictor.py     │  Entraînement modèle salaire
+│  salary_model.pkl │  (régression, scikit-learn)
+└───────────────────┘
+```
+
+### Architecture d'authentification (JWT)
+
+```
+Client
+  │
+  ├─ POST /auth/register ──▶ Création compte (hash bcrypt) ──▶ Azure SQL
+  │
+  ├─ POST /auth/login ─────▶ Vérification password ──────────▶ JWT Access Token
+  │                                                                    │
+  ├─ GET  /auth/me ────────▶ Bearer Token ───▶ Decode JWT ────▶ User info
+  │
+  └─ POST /auth/logout ────▶ Bearer Token ───▶ 200 OK (stateless)
+```
+
+### Infrastructure Azure (Terraform)
+
+```
+Azure
+├── Resource Group: hr-pulse-rg
+│   ├── Azure SQL Server
+│   │   └── Database: hr-pulse-db
+│   └── Azure AI Language
+│       └── Cognitive Services Account
+```
+
+### CI/CD GitHub Actions
+
+```
+git push
+    │
+    ▼
+┌───────────────────────────────────────┐
+│           GitHub Actions              │
+│                                       │
+│  Job 1: lint                          │
+│  └── ruff check backend/ tests/       │
+│           │                           │
+│           ▼                           │
+│  Job 2: tests (needs: lint)           │
+│  ├── Install ODBC Driver 18           │
+│  └── pytest tests/ -v                 │
+│           │                           │
+│           ▼                           │
+│  Job 3: docker (needs: tests)         │
+│  └── docker build Dockerfile.backend  │
+└───────────────────────────────────────┘
+```
+
+---
+
+## Stack technique
+
+| Couche          | Technologie                        |
+|-----------------|------------------------------------|
+| Backend         | FastAPI, SQLAlchemy, Pydantic       |
+| Auth            | JWT (python-jose), bcrypt (passlib) |
+| ML              | scikit-learn, pandas, numpy         |
+| IA              | Azure AI Language (NER)             |
+| Base de données | Azure SQL Server (pyodbc)           |
+| Frontend        | Streamlit                           |
+| Infra           | Terraform, Azure                    |
+| Conteneurs      | Docker, Docker Compose              |
+| Qualité         | Ruff, Pytest                        |
+| CI/CD           | GitHub Actions                      |
+| Dépendances     | uv                                  |
 
 ---
 
 ## Prérequis
 
-- Python 3.11+
-- [uv](https://github.com/astral-sh/uv)
+- Python **3.11+**
+- [uv](https://github.com/astral-sh/uv) — gestionnaire de dépendances
 - Docker & Docker Compose
 - Terraform >= 1.7
-- Azure CLI
+- Azure CLI (`az`)
+- ODBC Driver 18 for SQL Server
+
+### Installer uv
+
+```bash
+curl -Ls https://astral.sh/uv/install.sh | sh
+```
+
+### Installer ODBC Driver 18 (Ubuntu/Debian)
+
+```bash
+curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg
+
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-prod.gpg] \
+  https://packages.microsoft.com/ubuntu/22.04/prod jammy main" \
+  | sudo tee /etc/apt/sources.list.d/mssql-release.list
+
+sudo apt-get update
+sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+```
 
 ---
 
 ## Installation
 
+### 1. Cloner le dépôt
+
 ```bash
-# Cloner le repo
 git clone https://github.com/TON_USERNAME/hr-pulse-ai.git
 cd hr-pulse-ai
+```
 
-# Installer les dépendances avec uv (obligatoire)
-uv pip install -r requirements.txt
+### 2. Installer les dépendances
 
-# Copier et remplir le fichier .env
+```bash
+uv sync --frozen
+```
+
+### 3. Configurer les variables d'environnement
+
+```bash
 cp .env.example .env
+# Remplir les valeurs dans .env
+```
+
+### 4. Provisionner l'infrastructure Azure
+
+```bash
+cd infra/
+terraform init
+terraform plan
+terraform apply
+# Copier les outputs (DATABASE_URL, AZURE_LANGUAGE_ENDPOINT, etc.) dans .env
+cd ..
+```
+
+### 5. Lancer l'ingestion des données
+
+```bash
+uv run python -m backend.app.services.ingestion
+```
+
+### 6. Entraîner le modèle ML
+
+```bash
+uv run python -m backend.app.services.predictor
+# Génère models/salary_model.pkl
 ```
 
 ---
@@ -87,23 +242,97 @@ DATABASE_URL=mssql+pyodbc://<user>:<password>@<server>.database.windows.net/<db>
 AZURE_LANGUAGE_ENDPOINT=https://<resource>.cognitiveservices.azure.com/
 AZURE_LANGUAGE_KEY=your_key_here
 
-# OpenTelemetry
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+# JWT
+SECRET_KEY=change-me-in-production-use-openssl-rand-hex-32
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+
+> Générer une `SECRET_KEY` sécurisée : `openssl rand -hex 32`
+
+---
+
+## Lancer l'application
+
+### Avec Docker Compose (recommandé)
+
+```bash
+docker compose up --build
+```
+
+| Service  | URL                    |
+|----------|------------------------|
+| API      | http://localhost:8000  |
+| Docs     | http://localhost:8000/docs |
+| Frontend | http://localhost:8501  |
+
+### En local (sans Docker)
+
+```bash
+# Backend
+uv run uvicorn backend.app.main:app --reload --port 8000
+
+# Frontend (autre terminal)
+uv run streamlit run frontend/app.py
 ```
 
 ---
 
-## Lancer avec Docker Compose
+## API — Endpoints
+
+### Health
+
+| Méthode | Route     | Description              |
+|---------|-----------|--------------------------|
+| GET     | `/health` | Statut API + base de données |
+
+### Authentification
+
+| Méthode | Route            | Description                        | Auth |
+|---------|------------------|------------------------------------|------|
+| POST    | `/auth/register` | Créer un compte                    | —    |
+| POST    | `/auth/login`    | Connexion → retourne JWT           | —    |
+| POST    | `/auth/logout`   | Déconnexion (stateless)            | ✅   |
+| GET     | `/auth/me`       | Infos de l'utilisateur connecté    | ✅   |
+
+### Jobs
+
+| Méthode | Route      | Description                         | Auth |
+|---------|------------|-------------------------------------|------|
+| GET     | `/jobs`    | Liste des offres d'emploi           | —    |
+| POST    | `/jobs`    | Ajouter une offre                   | ✅   |
+
+### Prédiction
+
+| Méthode | Route       | Description                         | Auth |
+|---------|-------------|-------------------------------------|------|
+| POST    | `/predict`  | Prédire le salaire d'un poste       | —    |
+
+> La documentation interactive complète est disponible sur **http://localhost:8000/docs** (Swagger UI).
+
+#### Exemple — Register
 
 ```bash
-docker-compose up --build
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "username": "johndoe", "password": "motdepasse123"}'
 ```
 
-| Service    | URL                     |
-|------------|-------------------------|
-| API        | http://localhost:8000    |
-| Frontend   | http://localhost:8501    |
-| Jaeger UI  | http://localhost:16686   |
+#### Exemple — Login
+
+```bash
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "motdepasse123"}'
+# Réponse : {"access_token": "eyJ...", "token_type": "bearer"}
+```
+
+#### Exemple — Prédiction salaire
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"job_title": "Data Engineer", "skills": ["Python", "SQL", "Spark"]}'
+```
 
 ---
 
@@ -111,40 +340,120 @@ docker-compose up --build
 
 ```bash
 cd infra/
+
+# Initialiser les providers
 terraform init
-terraform plan
-terraform apply
+
+# Vérifier le plan
+terraform plan -var-file="terraform.tfvars"
+
+# Appliquer
+terraform apply -var-file="terraform.tfvars"
+
+# Détruire (attention)
+terraform destroy
 ```
+
+Les ressources provisionnées :
+- **Azure SQL Server** + base de données `hr-pulse-db`
+- **Azure AI Language** (Cognitive Services) pour le NER
 
 ---
 
 ## Tests & Qualité
 
-```bash
-# Linting
-ruff check .
+### Linting
 
-# Tests unitaires
-pytest tests/ -v
+```bash
+uv run ruff check backend/ tests/
+```
+
+### Tests unitaires
+
+```bash
+uv run pytest tests/ -v
+```
+
+### Tests avec couverture
+
+```bash
+uv run pytest tests/ -v --cov=backend --cov-report=term-missing
 ```
 
 ---
 
-## CI/CD (GitHub Actions)
+## CI/CD
 
-La pipeline se déclenche à chaque push et effectue :
+La pipeline GitHub Actions (`.github/workflows/ci.yml`) se déclenche sur chaque push vers `main`, `develop` et `feature/**`.
 
-1. **Linting** — Ruff vérifie la qualité du code
-2. **Tests** — Pytest valide les fonctionnalités
-3. **Build Docker** — Construction des images Backend & Frontend
+**3 jobs enchaînés :**
+
+1. **lint** — Ruff vérifie la qualité du code
+2. **tests** — Pytest valide les fonctionnalités (nécessite `lint`)
+3. **docker** — Build de l'image backend (nécessite `tests`)
+
+**Secrets GitHub requis :**
+
+| Secret                    | Description                     |
+|---------------------------|---------------------------------|
+| `DATABASE_URL`            | Connexion Azure SQL              |
+| `AZURE_LANGUAGE_ENDPOINT` | Endpoint Azure AI Language       |
+| `AZURE_LANGUAGE_KEY`      | Clé Azure AI Language            |
 
 ---
 
-## Fonctionnalités principales
+## Structure du projet
 
-- **Ingestion** : nettoyage automatique du fichier `jobs.csv`
-- **NER (IA)** : extraction des compétences via Azure AI Language
-- **ML** : prédiction de la fourchette salariale
-- **API REST** : liste des jobs, recherche par compétences, prédiction salaire
-- **Frontend** : visualisation et chargement de fichiers
-- **Observabilité** : traces OpenTelemetry visualisées dans Jaeger
+```
+hr-pulse-ai/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                  # Pipeline CI/CD
+├── backend/
+│   └── app/
+│       ├── core/
+│       │   ├── config.py           # Settings (Pydantic BaseSettings)
+│       │   └── security.py         # JWT + hash password
+│       ├── database/
+│       │   └── database.py         # Engine SQLAlchemy + get_db
+│       ├── models/
+│       │   ├── models.py           # Modèles SQLAlchemy (jobs)
+│       │   └── user.py             # Modèle SQLAlchemy User
+│       ├── routes/
+│       │   ├── routes_auth.py      # /auth/register /login /logout /me
+│       │   ├── routes_jobs.py      # /jobs
+│       │   └── routes_predict.py   # /predict
+│       ├── schemas/
+│       │   ├── models_schema.py    # Schémas Pydantic (jobs)
+│       │   └── auth_schema.py      # Schémas Pydantic (auth)
+│       ├── services/
+│       │   ├── db_service.py       # Requêtes DB
+│       │   ├── ingestion.py        # Nettoyage CSV
+│       │   ├── ner_service.py      # Azure AI NER
+│       │   └── predictor.py        # Modèle ML salaire
+│       └── main.py                 # Entrée FastAPI
+├── data/
+│   └── raw/
+│       └── jobs.csv                # Données brutes
+├── frontend/
+│   └── app.py                      # Interface Streamlit
+├── infra/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+├── models/
+│   └── salary_model.pkl            # Modèle ML entraîné
+├── tests/
+│   ├── test_ingestion.py
+│   └── test_predictor.py
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile.backend
+├── Dockerfile.frontend
+├── main.py
+├── pyproject.toml
+├── uv.lock
+└── README.md
+```
