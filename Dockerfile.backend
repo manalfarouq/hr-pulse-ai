@@ -20,8 +20,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY backend/ ./backend/
-COPY data/ ./data/
-COPY models/ ./models/
+RUN mkdir -p /app/data/raw /app/models
 COPY main.py .
 
 EXPOSE 8000
