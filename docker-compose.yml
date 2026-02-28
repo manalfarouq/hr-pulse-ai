@@ -17,16 +17,14 @@ services:
       timeout: 10s
       retries: 3
 
-  # frontend:  ← décommentez quand le frontend sera prêt
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.frontend
-  #   ports:
-  #     - "8501:8501"
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - API_URL=http://backend:8000
-  #   depends_on:
-  #     backend:
-  #       condition: service_healthy
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "4173:5173" 
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
