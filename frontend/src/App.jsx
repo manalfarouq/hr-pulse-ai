@@ -436,13 +436,33 @@ function LiveTrace({ activeStep, skillCount, termLines }) {
         })}
       </div>
 
-      {/* Terminal */}
-      <div style={{ marginTop: '1.6rem', background: C.termBg, padding: '1rem 1.2rem', flex: 1, minHeight: '140px', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ fontFamily: T.mono, fontSize: '0.6rem', color: 'rgba(74,222,128,0.22)', marginBottom: '0.2rem' }}>{'> terminal ready'}</div>
-        {termLines.map((line, i) => (
-          <div key={i} style={{ fontFamily: T.mono, fontSize: '0.62rem', color: C.termText, lineHeight: 1.9, opacity: 0, animation: `slideUp 0.3s ${i * 0.2}s forwards` }}>{line}</div>
-        ))}
-        {termLines.length === 0 && <div style={{ fontFamily: T.mono, fontSize: '0.6rem', color: 'rgba(74,222,128,0.2)' }}>{'> waiting for input...'}</div>}
+      {/* Parchment Terminal */}
+      <div style={{ marginTop: '1.6rem', flex: 1, minHeight: '180px', border: '1px solid #8B6914', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* title bar */}
+        <div style={{ background: '#3D2215', padding: '0.45rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #8B6914' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8B6914', display: 'inline-block' }} />
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#A0896A', display: 'inline-block' }} />
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#C8A96E', display: 'inline-block' }} />
+          <span style={{ flex: 1, textAlign: 'center', fontFamily: T.inter, fontSize: '0.5rem', fontWeight: 300, letterSpacing: '0.35em', color: '#8B6914' }}>PIPELINE LOG</span>
+        </div>
+        {/* log body */}
+        <div style={{ background: '#2C1810', padding: '0.9rem 1rem', flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#8B6914 #2C1810' }}>
+          {termLines.length === 0 ? (
+            <div style={{ fontFamily: T.mono, fontSize: '0.7rem', color: '#A0896A', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ color: '#8B6914' }}>{'>'}</span> waiting for input
+              <span style={{ animation: 'blink 1.1s ease-in-out infinite', color: '#C8A96E', fontStyle: 'normal' }}>|</span>
+            </div>
+          ) : termLines.map((line, i) => {
+            const secs = String(i + 1).padStart(2, '0')
+            return (
+              <div key={i} style={{ fontFamily: T.mono, fontSize: '0.68rem', lineHeight: 1.75, opacity: 0, animation: `slideUp 0.3s ${i * 0.2}s forwards`, display: 'flex', gap: '0.6rem', alignItems: 'baseline' }}>
+                <span style={{ color: '#A0896A', fontSize: '0.58rem', flexShrink: 0 }}>[00:00:{secs}]</span>
+                <span style={{ color: '#8B6914' }}>{'>'}</span>
+                <span style={{ color: '#E8D5A3' }}>{line.replace(/^>\ /, '')}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
@@ -790,8 +810,55 @@ function Footer() {
 /* ─────────────────────────────────────────────
    ROOT APP
 ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   SCROLL BACKGROUND HOOK
+   Smoothly interpolates a warm hue between
+   section colour stops as the user scrolls.
+───────────────────────────────────────────── */
+const BG_STOPS = [
+  { pct: 0, color: [250, 246, 238] }, // #FAF6EE  hero
+  { pct: 0.22, color: [245, 239, 224] }, // #F5EFE0  pipeline
+  { pct: 0.48, color: [239, 232, 216] }, // #EFE8D8  prediction
+  { pct: 0.72, color: [232, 223, 200] }, // #E8DFC8  tech
+  { pct: 1, color: [221, 208, 176] }, // #DDD0B0  footer
+]
+
+function lerp(a, b, t) { return a + (b - a) * t }
+
+function interpolateBg(progress) {
+  let lo = BG_STOPS[0], hi = BG_STOPS[BG_STOPS.length - 1]
+  for (let i = 0; i < BG_STOPS.length - 1; i++) {
+    if (progress >= BG_STOPS[i].pct && progress <= BG_STOPS[i + 1].pct) {
+      lo = BG_STOPS[i]; hi = BG_STOPS[i + 1]; break
+    }
+  }
+  const span = hi.pct - lo.pct
+  const t = span === 0 ? 0 : (progress - lo.pct) / span
+  const r = Math.round(lerp(lo.color[0], hi.color[0], t))
+  const g = Math.round(lerp(lo.color[1], hi.color[1], t))
+  const b = Math.round(lerp(lo.color[2], hi.color[2], t))
+  return `rgb(${r},${g},${b})`
+}
+
+function useScrollBg() {
+  useEffect(() => {
+    const el = document.documentElement
+    const update = () => {
+      const scrolled = window.scrollY
+      const maxScroll = el.scrollHeight - el.clientHeight
+      const progress = maxScroll > 0 ? Math.min(1, scrolled / maxScroll) : 0
+      document.body.style.background = interpolateBg(progress)
+      document.body.style.transition = 'background-color 0.55s ease'
+    }
+    window.addEventListener('scroll', update, { passive: true })
+    update()
+    return () => window.removeEventListener('scroll', update)
+  }, [])
+}
+
 export default function App() {
   useFonts()
+  useScrollBg()
   const [view, setView] = useState('home')
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
@@ -803,7 +870,7 @@ export default function App() {
   const handleLogout = () => { setUser(null); setIsLoggedIn(false); setView('home'); setToast('See you soon.') }
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
       {toast && <Toast msg={toast} onClose={dismiss} />}
       <Nav view={view} setView={setView} isLoggedIn={isLoggedIn} user={user} onLogout={handleLogout} />
 

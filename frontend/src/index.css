@@ -196,6 +196,28 @@ body {
   }
 }
 
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes scrollBg {
+  from {
+    background-color: #FAF6EE;
+  }
+
+  to {
+    background-color: #DDD0B0;
+  }
+}
+
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar {
   width: 4px;
