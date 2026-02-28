@@ -1,6 +1,6 @@
 # HR-Pulse AI
 
-> Plateforme d'analyse automatique d'offres d'emploi — Azure AI NER, FastAPI, Streamlit, Terraform, Docker & CI/CD.
+> Plateforme d'analyse automatique d'offres d'emploi — Azure AI NER, FastAPI, React/Vite, Terraform, Docker & CI/CD.
 
 ---
 
@@ -23,10 +23,10 @@
 
 ## Vue d'ensemble
 
-HR-Pulse AI automatise l'analyse d'offres d'emploi de bout en bout pour une startup RH fictive. Le pipeline part d'un fichier CSV brut et enchaîne : nettoyage des données, extraction de compétences par IA (Azure NER), prédiction salariale par ML, exposition via API REST et interface visuelle.
+HR-Pulse AI automatise l'analyse d'offres d'emploi de bout en bout pour une startup RH fictive. Le pipeline part d'un fichier CSV brut et enchaîne : nettoyage des données, extraction de compétences par IA (Azure NER), prédiction salariale par ML, exposition via API REST et interface visuelle React.
 
 ```
-CSV brut → Nettoyage → Azure AI NER → Base SQL → API FastAPI → Frontend Streamlit
+CSV brut → Nettoyage → Azure AI NER → Base SQL → API FastAPI → Frontend React/Vite
                                                 ↘ ML (prédiction salaire)
 ```
 
@@ -41,8 +41,8 @@ CSV brut → Nettoyage → Azure AI NER → Base SQL → API FastAPI → Fronten
 │                         HR-Pulse AI                             │
 │                                                                 │
 │  ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐  │
-│  │  Streamlit  │────▶│  FastAPI     │────▶│  Azure SQL DB   │  │
-│  │  :8501      │     │  :8000       │     │  (SQLAlchemy)   │  │
+│  │  React/Vite │────▶│  FastAPI     │────▶│  Azure SQL DB   │  │
+│  │  :4173      │     │  :8000       │     │  (SQLAlchemy)   │  │
 │  └─────────────┘     └──────┬───────┘     └─────────────────┘  │
 │                             │                                   │
 │                    ┌────────┴────────┐                          │
@@ -86,7 +86,7 @@ data/raw/jobs.csv
 ### Architecture d'authentification (JWT)
 
 ```
-Client
+Client (React)
   │
   ├─ POST /auth/register ──▶ Création compte (hash bcrypt) ──▶ Azure SQL
   │
@@ -135,26 +135,27 @@ git push
 
 ## Stack technique
 
-| Couche          | Technologie                        |
-|-----------------|------------------------------------|
-| Backend         | FastAPI, SQLAlchemy, Pydantic       |
-| Auth            | JWT (python-jose), bcrypt (passlib) |
-| ML              | scikit-learn, pandas, numpy         |
-| IA              | Azure AI Language (NER)             |
-| Base de données | Azure SQL Server (pyodbc)           |
-| Frontend        | Streamlit                           |
-| Infra           | Terraform, Azure                    |
-| Conteneurs      | Docker, Docker Compose              |
-| Qualité         | Ruff, Pytest                        |
-| CI/CD           | GitHub Actions                      |
-| Dépendances     | uv                                  |
+| Couche          | Technologie                         |
+|-----------------|-------------------------------------|
+| Backend         | FastAPI, SQLAlchemy, Pydantic        |
+| Auth            | JWT (python-jose), bcrypt (passlib)  |
+| ML              | scikit-learn, pandas, numpy          |
+| IA              | Azure AI Language (NER)              |
+| Base de données | Azure SQL Server (pyodbc)            |
+| Frontend        | React 18, Vite, TailwindCSS          |
+| Infra           | Terraform, Azure                     |
+| Conteneurs      | Docker, Docker Compose               |
+| Qualité         | Ruff, Pytest, ESLint                 |
+| CI/CD           | GitHub Actions                       |
+| Dépendances     | uv (Python), npm (Node)              |
 
 ---
 
 ## Prérequis
 
 - Python **3.11+**
-- [uv](https://github.com/astral-sh/uv) — gestionnaire de dépendances
+- Node.js **20+**
+- [uv](https://github.com/astral-sh/uv) — gestionnaire de dépendances Python
 - Docker & Docker Compose
 - Terraform >= 1.7
 - Azure CLI (`az`)
@@ -191,20 +192,26 @@ git clone https://github.com/TON_USERNAME/hr-pulse-ai.git
 cd hr-pulse-ai
 ```
 
-### 2. Installer les dépendances
+### 2. Installer les dépendances Python (backend)
 
 ```bash
 uv sync --frozen
 ```
 
-### 3. Configurer les variables d'environnement
+### 3. Installer les dépendances Node (frontend)
+
+```bash
+cd frontend && npm install && cd ..
+```
+
+### 4. Configurer les variables d'environnement
 
 ```bash
 cp .env.example .env
 # Remplir les valeurs dans .env
 ```
 
-### 4. Provisionner l'infrastructure Azure
+### 5. Provisionner l'infrastructure Azure
 
 ```bash
 cd infra/
@@ -215,13 +222,13 @@ terraform apply
 cd ..
 ```
 
-### 5. Lancer l'ingestion des données
+### 6. Lancer l'ingestion des données
 
 ```bash
 uv run python -m backend.app.services.ingestion
 ```
 
-### 6. Entraîner le modèle ML
+### 7. Entraîner le modèle ML
 
 ```bash
 uv run python -m backend.app.services.predictor
@@ -249,6 +256,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES=60
 
 > Générer une `SECRET_KEY` sécurisée : `openssl rand -hex 32`
 
+La variable `VITE_API_URL` est injectée automatiquement par Docker Compose dans le conteneur frontend.
+
 ---
 
 ## Lancer l'application
@@ -259,20 +268,21 @@ ACCESS_TOKEN_EXPIRE_MINUTES=60
 docker compose up --build
 ```
 
-| Service  | URL                    |
-|----------|------------------------|
-| API      | http://localhost:8000  |
+| Service  | URL                        |
+|----------|----------------------------|
+| API      | http://localhost:8000      |
 | Docs     | http://localhost:8000/docs |
-| Frontend | http://localhost:8501  |
+| Frontend | http://localhost:4173      |
 
 ### En local (sans Docker)
 
 ```bash
-# Backend
+# Terminal 1 — Backend
 uv run uvicorn backend.app.main:app --reload --port 8000
 
-# Frontend (autre terminal)
-uv run streamlit run frontend/app.py
+# Terminal 2 — Frontend
+cd frontend && npm run dev
+# Accessible sur http://localhost:5173
 ```
 
 ---
@@ -281,31 +291,31 @@ uv run streamlit run frontend/app.py
 
 ### Health
 
-| Méthode | Route     | Description              |
-|---------|-----------|--------------------------|
+| Méthode | Route     | Description                  |
+|---------|-----------|------------------------------|
 | GET     | `/health` | Statut API + base de données |
 
 ### Authentification
 
-| Méthode | Route            | Description                        | Auth |
-|---------|------------------|------------------------------------|------|
-| POST    | `/auth/register` | Créer un compte                    | —    |
-| POST    | `/auth/login`    | Connexion → retourne JWT           | —    |
-| POST    | `/auth/logout`   | Déconnexion (stateless)            | ✅   |
-| GET     | `/auth/me`       | Infos de l'utilisateur connecté    | ✅   |
+| Méthode | Route            | Description                     | Auth |
+|---------|------------------|---------------------------------|------|
+| POST    | `/auth/register` | Créer un compte                 | —    |
+| POST    | `/auth/login`    | Connexion → retourne JWT        | —    |
+| POST    | `/auth/logout`   | Déconnexion (stateless)         | ✅   |
+| GET     | `/auth/me`       | Infos de l'utilisateur connecté | ✅   |
 
 ### Jobs
 
-| Méthode | Route      | Description                         | Auth |
-|---------|------------|-------------------------------------|------|
-| GET     | `/jobs`    | Liste des offres d'emploi           | —    |
-| POST    | `/jobs`    | Ajouter une offre                   | ✅   |
+| Méthode | Route   | Description               | Auth |
+|---------|---------|---------------------------|------|
+| GET     | `/jobs` | Liste des offres d'emploi | —    |
+| POST    | `/jobs` | Ajouter une offre         | ✅   |
 
 ### Prédiction
 
-| Méthode | Route       | Description                         | Auth |
-|---------|-------------|-------------------------------------|------|
-| POST    | `/predict`  | Prédire le salaire d'un poste       | —    |
+| Méthode | Route      | Description                   | Auth |
+|---------|------------|-------------------------------|------|
+| POST    | `/predict` | Prédire le salaire d'un poste | —    |
 
 > La documentation interactive complète est disponible sur **http://localhost:8000/docs** (Swagger UI).
 
@@ -340,14 +350,8 @@ curl -X POST http://localhost:8000/predict \
 
 ```bash
 cd infra/
-
-# Initialiser les providers
 terraform init
-
-# Vérifier le plan
 terraform plan -var-file="terraform.tfvars"
-
-# Appliquer
 terraform apply -var-file="terraform.tfvars"
 
 # Détruire (attention)
@@ -362,10 +366,16 @@ Les ressources provisionnées :
 
 ## Tests & Qualité
 
-### Linting
+### Linting Python
 
 ```bash
 uv run ruff check backend/ tests/
+```
+
+### Linting JavaScript
+
+```bash
+cd frontend && npm run lint
 ```
 
 ### Tests unitaires
@@ -388,17 +398,17 @@ La pipeline GitHub Actions (`.github/workflows/ci.yml`) se déclenche sur chaque
 
 **3 jobs enchaînés :**
 
-1. **lint** — Ruff vérifie la qualité du code
+1. **lint** — Ruff vérifie la qualité du code Python
 2. **tests** — Pytest valide les fonctionnalités (nécessite `lint`)
 3. **docker** — Build de l'image backend (nécessite `tests`)
 
 **Secrets GitHub requis :**
 
-| Secret                    | Description                     |
-|---------------------------|---------------------------------|
-| `DATABASE_URL`            | Connexion Azure SQL              |
-| `AZURE_LANGUAGE_ENDPOINT` | Endpoint Azure AI Language       |
-| `AZURE_LANGUAGE_KEY`      | Clé Azure AI Language            |
+| Secret                    | Description                  |
+|---------------------------|------------------------------|
+| `DATABASE_URL`            | Connexion Azure SQL           |
+| `AZURE_LANGUAGE_ENDPOINT` | Endpoint Azure AI Language    |
+| `AZURE_LANGUAGE_KEY`      | Clé Azure AI Language         |
 
 ---
 
@@ -435,8 +445,18 @@ hr-pulse-ai/
 ├── data/
 │   └── raw/
 │       └── jobs.csv                # Données brutes
-├── frontend/
-│   └── app.py                      # Interface Streamlit
+├── frontend/                       # React 18 + Vite + TailwindCSS
+│   ├── public/
+│   │   └── vite.svg
+│   ├── src/
+│   │   ├── App.jsx                 # Composant principal (Hero, Pipeline, Predict...)
+│   │   ├── App.css
+│   │   ├── main.jsx                # Entrée React
+│   │   └── index.css               # Styles globaux + TailwindCSS
+│   ├── index.html
+│   ├── package.json
+│   ├── vite.config.js
+│   └── eslint.config.js
 ├── infra/
 │   ├── main.tf
 │   ├── variables.tf
