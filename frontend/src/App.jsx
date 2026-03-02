@@ -423,7 +423,7 @@ function LiveTrace({ activeStep, skillCount, termLines, realSkills }) {
               </div>
               {step.detail === 'skills' && st !== 'idle' && (
                 <div style={{ paddingLeft: '1.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
-                  {(Array.isArray(realSkills) && realSkills.length > 0 ? realSkills : SKILLS).slice(0, skillCount).map((sk, si) => (
+                  {(Array.isArray(realSkills) && realSkills.length > 0 ? realSkills : ['python', 'sql', 'ml', 'data', 'cloud', 'api']).slice(0, skillCount).map((sk, si) => (
                     <span key={sk} style={{ padding: '0.14rem 0.5rem', border: `1px solid ${C.goldLight}`, fontFamily: T.inter, fontSize: '0.58rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: `fadeInScale 0.35s ${si * 0.13}s forwards` }}>{sk}</span>
                   ))}
                 </div>
@@ -493,7 +493,12 @@ function SalaryCard({ visible, salary, skills }) {
         <div style={{ height: '1px', background: C.border, margin: '1.4rem 0' }} />
         <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '0.7rem' }}>EXTRACTED SKILLS</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '1.4rem' }}>
-          {(Array.isArray(skills) && skills.length > 0 ? skills : SKILLS).map((sk, i) => <span key={sk} style={{ padding: '0.25rem 0.7rem', border: `1px solid ${C.gold}`, fontFamily: T.inter, fontSize: '0.62rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: visible ? `fadeInScale 0.4s ${0.5 + i * 0.1}s forwards` : 'none' }}>{sk}</span>)}
+          {Array.isArray(skills) && skills.length > 0
+              ? skills.map((sk, i) => (
+                  <span key={sk} style={{ padding: '0.25rem 0.7rem', border: `1px solid ${C.gold}`, fontFamily: T.inter, fontSize: '0.62rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: visible ? `fadeInScale 0.4s ${0.5 + i * 0.1}s forwards` : 'none' }}>{sk}</span>
+                ))
+              : <span style={{ fontFamily: T.inter, fontSize: '0.72rem', color: C.goldMuted, fontStyle: 'italic' }}>Add English keywords to detect skills</span>
+            }
         </div>
         <div style={{ height: '1px', background: C.border, margin: '1.4rem 0' }} />
         <p style={{ fontFamily: T.playfair, fontStyle: 'italic', fontSize: '0.88rem', color: C.goldMuted, lineHeight: 1.7 }}>"This profile is in the top 23% of demand in your region."</p>
