@@ -395,7 +395,7 @@ const TERM_LINES = [
   '> Pipeline complete in 1.87s',
 ]
 
-function LiveTrace({ activeStep, skillCount, termLines }) {
+function LiveTrace({ activeStep, skillCount, termLines, realSkills }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '1.8rem' }}>LIVE PIPELINE TRACE</div>
@@ -423,7 +423,7 @@ function LiveTrace({ activeStep, skillCount, termLines }) {
               </div>
               {step.detail === 'skills' && st !== 'idle' && (
                 <div style={{ paddingLeft: '1.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
-                  {SKILLS.slice(0, skillCount).map((sk, si) => (
+                  {(Array.isArray(realSkills) && realSkills.length > 0 ? realSkills : SKILLS).slice(0, skillCount).map((sk, si) => (
                     <span key={sk} style={{ padding: '0.14rem 0.5rem', border: `1px solid ${C.goldLight}`, fontFamily: T.inter, fontSize: '0.58rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: `fadeInScale 0.35s ${si * 0.13}s forwards` }}>{sk}</span>
                   ))}
                 </div>
@@ -469,22 +469,34 @@ function LiveTrace({ activeStep, skillCount, termLines }) {
   )
 }
 
-function SalaryCard({ visible, salary }) {
+function SalaryCard({ visible, salary, skills }) {
   const salaryNum = salary || 52400
   const low = Math.round(salaryNum * 0.87)
   const high = Math.round(salaryNum * 1.13)
+  const pct = Math.round(((salaryNum - low) / (high - low)) * 100)
 
   return (
     <div style={{ marginTop: '1.8rem', clipPath: visible ? 'inset(0 0 0 0)' : 'inset(100% 0 0 0)', transition: 'clip-path 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
       <div style={{ background: C.white, border: `1px solid ${C.border}`, padding: '2rem' }}>
-        <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '1.4rem' }}>PREDICTED SALARY</div>
+        <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '1.4rem' }}>PREDICTED SALARY RANGE</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
           <span style={{ fontFamily: T.mono, fontSize: '0.88rem', color: C.goldMuted }}>{low.toLocaleString()} USD</span>
           <span style={{ fontFamily: T.mono, fontSize: '0.88rem', color: C.goldMuted }}>{high.toLocaleString()} USD</span>
         </div>
+        <div style={{ position: 'relative', height: '2px', background: C.border, marginBottom: '0.7rem' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: `linear-gradient(90deg, rgba(139,105,20,0.3), ${C.gold})`, animation: visible ? 'fillBar 1.3s 0.3s ease forwards' : 'none', '--fill-width': `${pct}%`, width: 0 }} />
+          <div style={{ position: 'absolute', left: `${pct - 1}%`, top: '50%', transform: 'translate(-50%,-50%)', width: '10px', height: '10px', borderRadius: '50%', background: C.gold, boxShadow: `0 0 10px ${C.gold}` }} />
+        </div>
         <div style={{ textAlign: 'center', fontFamily: T.mono, fontSize: '1.6rem', color: C.gold, fontWeight: 400 }}>
           {salaryNum.toLocaleString()} USD
         </div>
+        <div style={{ height: '1px', background: C.border, margin: '1.4rem 0' }} />
+        <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '0.7rem' }}>EXTRACTED SKILLS</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '1.4rem' }}>
+          {(Array.isArray(skills) && skills.length > 0 ? skills : SKILLS).map((sk, i) => <span key={sk} style={{ padding: '0.25rem 0.7rem', border: `1px solid ${C.gold}`, fontFamily: T.inter, fontSize: '0.62rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: visible ? `fadeInScale 0.4s ${0.5 + i * 0.1}s forwards` : 'none' }}>{sk}</span>)}
+        </div>
+        <div style={{ height: '1px', background: C.border, margin: '1.4rem 0' }} />
+        <p style={{ fontFamily: T.playfair, fontStyle: 'italic', fontSize: '0.88rem', color: C.goldMuted, lineHeight: 1.7 }}>"This profile is in the top 23% of demand in your region."</p>
       </div>
     </div>
   )
@@ -566,7 +578,7 @@ function PredictionStudio({ isLoggedIn, setView, token }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3.5rem' }}>
 
           <div style={{ background: C.white, border: `1px solid ${C.border}`, padding: '2.2rem', display: 'flex', flexDirection: 'column', ...fade(0.2), minHeight: '540px' }}>
-            <LiveTrace activeStep={activeStep} skillCount={skillCount} termLines={termLines} />
+            <LiveTrace activeStep={activeStep} skillCount={skillCount} termLines={termLines} realSkills={result?.skills_extracted} />
           </div>
 
           <div style={{ ...fade(0.35), display: 'flex', flexDirection: 'column' }}>
@@ -613,7 +625,7 @@ function PredictionStudio({ isLoggedIn, setView, token }) {
                 </div>
               )}
             </div>
-            <SalaryCard visible={done} salary={result?.predicted_salary_usd} />
+            <SalaryCard visible={done} salary={result?.predicted_salary_usd} skills={result?.skills_extracted} />
           </div>
         </div>
       </div>
