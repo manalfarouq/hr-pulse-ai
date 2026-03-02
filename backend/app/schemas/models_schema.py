@@ -19,3 +19,4 @@ class SalaryPredictRequest(BaseModel):
 class SalaryPredictResponse(BaseModel):
     job_title: str
     predicted_salary_usd: float
+    skills_extracted: list[str] = []

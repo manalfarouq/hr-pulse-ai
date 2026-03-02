@@ -22,6 +22,25 @@ const T = {
 }
 
 /* ─────────────────────────────────────────────
+   API FETCH UTILITY
+───────────────────────────────────────────── */
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001'
+
+const apiFetch = async (path, options = {}, token = null) => {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { ...headers, ...options.headers },
+  })
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}))
+    throw new Error(error.detail || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+/* ─────────────────────────────────────────────
    SVG ICON COMPONENTS
 ───────────────────────────────────────────── */
 const Icon = ({ size = 20, color, children }) => (
@@ -178,7 +197,7 @@ function Nav({ view, setView, isLoggedIn, user, onLogout }) {
 const HERO_LETTERS = 'HR-PULSE'.split('')
 
 function Hero() {
-  const [phase, setPhase] = useState(0) // 0=idle → 1=letters → 2=echo
+  const [phase, setPhase] = useState(0)
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 100)
     const t2 = setTimeout(() => setPhase(2), 100 + HERO_LETTERS.length * 55 + 900)
@@ -200,7 +219,6 @@ function Hero() {
       backgroundImage: `radial-gradient(circle, rgba(200,169,110,0.045) 1px, transparent 1px)`,
       backgroundSize: '24px 24px',
     }}>
-      {/* Corner details */}
       <div style={{ position: 'absolute', top: '6rem', left: '3rem', fontFamily: T.inter, fontSize: '0.58rem', letterSpacing: '0.25em', color: C.goldMuted, fontWeight: 300 }}>
         2026 — AI PLATFORM
       </div>
@@ -208,15 +226,11 @@ function Hero() {
         AZURE · FASTAPI · DOCKER
       </div>
 
-      {/* Central content */}
       <div style={{ textAlign: 'center', padding: '0 2rem', position: 'relative', zIndex: 1 }}>
-
-        {/* Top label */}
         <div style={{ fontFamily: T.inter, fontSize: '0.6rem', fontWeight: 300, letterSpacing: '0.45em', color: C.gold, marginBottom: '2.5rem', opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.9s ease 0.1s' }}>
           INTELLIGENT PIPELINE
         </div>
 
-        {/* Giant echo title */}
         <div style={{ position: 'relative', lineHeight: 0.88, marginBottom: '2.5rem', display: 'inline-block' }}>
           <h1 style={{
             fontFamily: T.playfair, fontStyle: 'italic', fontWeight: 900,
@@ -238,12 +252,10 @@ function Hero() {
           </h1>
         </div>
 
-        {/* Bottom label */}
         <div style={{ fontFamily: T.inter, fontSize: '0.6rem', fontWeight: 300, letterSpacing: '0.45em', color: C.goldMuted, marginBottom: '3.5rem', opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? 'translateY(0)' : 'translateY(16px)', transition: 'all 0.9s ease 0.55s' }}>
           NATIVE CONTAINERIZATION
         </div>
 
-        {/* CTA buttons */}
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', opacity: phase >= 1 ? 1 : 0, transition: 'opacity 0.9s ease 0.75s' }}>
           <button onClick={() => document.getElementById('pipeline')?.scrollIntoView({ behavior: 'smooth' })}
             style={{ padding: '0.85rem 2.4rem', background: 'transparent', border: `1.5px solid ${C.text}`, color: C.text, fontFamily: T.inter, fontSize: '0.6rem', fontWeight: 400, letterSpacing: '0.22em', cursor: 'pointer', transition: 'all 0.28s ease' }}
@@ -260,7 +272,6 @@ function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
       <div style={{ position: 'absolute', bottom: '2.8rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', opacity: phase >= 1 ? 0.8 : 0, transition: 'opacity 1s ease 1.2s' }}>
         <span style={{ fontFamily: T.inter, fontSize: '0.52rem', letterSpacing: '0.35em', color: C.goldMuted }}>SCROLL</span>
         <div style={{ width: '1px', height: '40px', background: `linear-gradient(to bottom, ${C.goldLight}, transparent)` }} />
@@ -301,13 +312,11 @@ function PipelineSection() {
 
   return (
     <section id="pipeline" ref={ref} style={{ background: C.bg, padding: '9rem 4rem', position: 'relative' }}>
-      {/* dot grid on this section too */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(circle, rgba(200,169,110,0.04) 1px, transparent 1px)`, backgroundSize: '24px 24px', pointerEvents: 'none' }} />
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '6rem', alignItems: 'flex-start' }}>
 
-          {/* LEFT — section header */}
           <div style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(30px)', transition: 'all 0.9s ease' }}>
             <OutlineNum n="01" visible={inView} />
             <div style={{ fontFamily: T.inter, fontSize: '0.6rem', fontWeight: 300, letterSpacing: '0.38em', color: C.gold, marginBottom: '1.5rem', marginTop: '-0.5rem' }}>ARCHITECTURE</div>
@@ -320,7 +329,6 @@ function PipelineSection() {
             </p>
           </div>
 
-          {/* RIGHT — vertical node list */}
           <div style={{ paddingTop: '1rem' }}>
             {NODES.map((node, i) => (
               <div key={node.label} style={{
@@ -345,7 +353,6 @@ function PipelineSection() {
           </div>
         </div>
 
-        {/* Stats row */}
         <div style={{ marginTop: '7rem', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', borderTop: `1px solid ${C.border}`, paddingTop: '4rem' }}>
           {[
             { val: jobs.toLocaleString(), suffix: '', label: 'Jobs Analyzed' },
@@ -388,21 +395,18 @@ const TERM_LINES = [
   '> Pipeline complete in 1.87s',
 ]
 
-function LiveTrace({ activeStep, skillCount, termLines }) {
+function LiveTrace({ activeStep, skillCount, termLines, realSkills }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '1.8rem' }}>LIVE PIPELINE TRACE</div>
 
-      {/* Steps */}
       <div style={{ position: 'relative', paddingLeft: '1.2rem' }}>
-        {/* vertical connector */}
         <div style={{ position: 'absolute', left: 0, top: '12px', bottom: '12px', width: '1px', background: `linear-gradient(to bottom, ${C.goldLight}, ${C.border})` }} />
 
         {P_STEPS.map((step, i) => {
           const st = activeStep === null ? 'idle' : activeStep > i ? 'done' : activeStep === i ? 'active' : 'idle'
           return (
             <div key={step.num} style={{ marginBottom: '1.1rem', paddingLeft: '1.2rem', position: 'relative' }}>
-              {/* connector dot */}
               <div style={{
                 position: 'absolute', left: '-1.2rem', top: '6px',
                 width: '7px', height: '7px', borderRadius: '50%',
@@ -419,7 +423,7 @@ function LiveTrace({ activeStep, skillCount, termLines }) {
               </div>
               {step.detail === 'skills' && st !== 'idle' && (
                 <div style={{ paddingLeft: '1.6rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
-                  {SKILLS.slice(0, skillCount).map((sk, si) => (
+                  {(Array.isArray(realSkills) && realSkills.length > 0 ? realSkills : ['python', 'sql', 'ml', 'data', 'cloud', 'api']).slice(0, skillCount).map((sk, si) => (
                     <span key={sk} style={{ padding: '0.14rem 0.5rem', border: `1px solid ${C.goldLight}`, fontFamily: T.inter, fontSize: '0.58rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: `fadeInScale 0.35s ${si * 0.13}s forwards` }}>{sk}</span>
                   ))}
                 </div>
@@ -436,16 +440,13 @@ function LiveTrace({ activeStep, skillCount, termLines }) {
         })}
       </div>
 
-      {/* Parchment Terminal */}
       <div style={{ marginTop: '1.6rem', flex: 1, minHeight: '180px', border: '1px solid #8B6914', borderRadius: '4px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* title bar */}
         <div style={{ background: '#3D2215', padding: '0.45rem 0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid #8B6914' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8B6914', display: 'inline-block' }} />
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#A0896A', display: 'inline-block' }} />
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#C8A96E', display: 'inline-block' }} />
           <span style={{ flex: 1, textAlign: 'center', fontFamily: T.inter, fontSize: '0.5rem', fontWeight: 300, letterSpacing: '0.35em', color: '#8B6914' }}>PIPELINE LOG</span>
         </div>
-        {/* log body */}
         <div style={{ background: '#2C1810', padding: '0.9rem 1rem', flex: 1, overflowY: 'auto', scrollbarWidth: 'thin', scrollbarColor: '#8B6914 #2C1810' }}>
           {termLines.length === 0 ? (
             <div style={{ fontFamily: T.mono, fontSize: '0.7rem', color: '#A0896A', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -468,24 +469,36 @@ function LiveTrace({ activeStep, skillCount, termLines }) {
   )
 }
 
-function SalaryCard({ visible }) {
+function SalaryCard({ visible, salary, skills }) {
+  const salaryNum = salary || 52400
+  const low = Math.round(salaryNum * 0.87)
+  const high = Math.round(salaryNum * 1.13)
+  const pct = Math.round(((salaryNum - low) / (high - low)) * 100)
+
   return (
     <div style={{ marginTop: '1.8rem', clipPath: visible ? 'inset(0 0 0 0)' : 'inset(100% 0 0 0)', transition: 'clip-path 0.9s cubic-bezier(0.16,1,0.3,1)' }}>
       <div style={{ background: C.white, border: `1px solid ${C.border}`, padding: '2rem' }}>
         <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '1.4rem' }}>PREDICTED SALARY RANGE</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-          <span style={{ fontFamily: T.mono, fontSize: '0.88rem', color: C.goldMuted }}>45,000 EUR</span>
-          <span style={{ fontFamily: T.mono, fontSize: '0.88rem', color: C.goldMuted }}>62,000 EUR</span>
+          <span style={{ fontFamily: T.mono, fontSize: '0.88rem', color: C.goldMuted }}>{low.toLocaleString()} USD</span>
+          <span style={{ fontFamily: T.mono, fontSize: '0.88rem', color: C.goldMuted }}>{high.toLocaleString()} USD</span>
         </div>
         <div style={{ position: 'relative', height: '2px', background: C.border, marginBottom: '0.7rem' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: `linear-gradient(90deg, rgba(139,105,20,0.3), ${C.gold})`, animation: visible ? 'fillBar 1.3s 0.3s ease forwards' : 'none', '--fill-width': '62%', width: 0 }} />
-          <div style={{ position: 'absolute', left: '61%', top: '50%', transform: 'translate(-50%,-50%)', width: '10px', height: '10px', borderRadius: '50%', background: C.gold, boxShadow: `0 0 10px ${C.gold}` }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: `linear-gradient(90deg, rgba(139,105,20,0.3), ${C.gold})`, animation: visible ? 'fillBar 1.3s 0.3s ease forwards' : 'none', '--fill-width': `${pct}%`, width: 0 }} />
+          <div style={{ position: 'absolute', left: `${pct - 1}%`, top: '50%', transform: 'translate(-50%,-50%)', width: '10px', height: '10px', borderRadius: '50%', background: C.gold, boxShadow: `0 0 10px ${C.gold}` }} />
         </div>
-        <div style={{ textAlign: 'center', fontFamily: T.mono, fontSize: '1.6rem', color: C.gold, fontWeight: 400 }}>52,400 EUR</div>
+        <div style={{ textAlign: 'center', fontFamily: T.mono, fontSize: '1.6rem', color: C.gold, fontWeight: 400 }}>
+          {salaryNum.toLocaleString()} USD
+        </div>
         <div style={{ height: '1px', background: C.border, margin: '1.4rem 0' }} />
         <div style={{ fontFamily: T.inter, fontSize: '0.58rem', fontWeight: 300, letterSpacing: '0.32em', color: C.gold, marginBottom: '0.7rem' }}>EXTRACTED SKILLS</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '1.4rem' }}>
-          {SKILLS.map((sk, i) => <span key={sk} style={{ padding: '0.25rem 0.7rem', border: `1px solid ${C.gold}`, fontFamily: T.inter, fontSize: '0.62rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: visible ? `fadeInScale 0.4s ${0.5 + i * 0.1}s forwards` : 'none' }}>{sk}</span>)}
+          {Array.isArray(skills) && skills.length > 0
+              ? skills.map((sk, i) => (
+                  <span key={sk} style={{ padding: '0.25rem 0.7rem', border: `1px solid ${C.gold}`, fontFamily: T.inter, fontSize: '0.62rem', color: C.gold, letterSpacing: '0.08em', opacity: 0, animation: visible ? `fadeInScale 0.4s ${0.5 + i * 0.1}s forwards` : 'none' }}>{sk}</span>
+                ))
+              : <span style={{ fontFamily: T.inter, fontSize: '0.72rem', color: C.goldMuted, fontStyle: 'italic' }}>Add English keywords to detect skills</span>
+            }
         </div>
         <div style={{ height: '1px', background: C.border, margin: '1.4rem 0' }} />
         <p style={{ fontFamily: T.playfair, fontStyle: 'italic', fontSize: '0.88rem', color: C.goldMuted, lineHeight: 1.7 }}>"This profile is in the top 23% of demand in your region."</p>
@@ -494,7 +507,7 @@ function SalaryCard({ visible }) {
   )
 }
 
-function PredictionStudio({ isLoggedIn, setView }) {
+function PredictionStudio({ isLoggedIn, setView, token }) {
   const [ref, inView] = useInView(0.1)
   const [form, setForm] = useState({ title: '', desc: '', contract: 'CDI', location: '' })
   const [running, setRunning] = useState(false)
@@ -503,21 +516,52 @@ function PredictionStudio({ isLoggedIn, setView }) {
   const [termLines, setTermLines] = useState([])
   const [done, setDone] = useState(false)
   const [authMsg, setAuthMsg] = useState(false)
+  const [result, setResult] = useState(null)
 
-  const run = useCallback(() => {
-    if (!isLoggedIn) { setAuthMsg(true); return }
-    if (running || done) return
-    setAuthMsg(false); setRunning(true); setActiveStep(0); setSkillCount(0); setTermLines([]); setDone(false)
-    const delays = [0, 1100, 2100, 3200, 4100, 5300]
-    delays.forEach((d, step) => {
+  const run = useCallback(async () => {
+  if (!isLoggedIn) { setAuthMsg(true); return }
+  if (running) return
+  setAuthMsg(false); setRunning(true); setActiveStep(0)
+  setSkillCount(0); setTermLines([]); setDone(false); setResult(null)
+
+  // Animation + API en parallèle
+  const animPromise = new Promise(resolve => {
+    const animDelays = [0, 800, 1600, 2400]
+    animDelays.forEach((d, i) => {
       setTimeout(() => {
-        setActiveStep(step === delays.length - 1 ? 999 : step + 1)
-        setTermLines(p => [...p, TERM_LINES[step]])
-        if (step === 2) SKILLS.forEach((_, si) => setTimeout(() => setSkillCount(s => s + 1), si * 210 + 100))
-        if (step === delays.length - 1) { setTermLines(TERM_LINES); setRunning(false); setDone(true) }
+        setActiveStep(i + 1)
+        setTermLines(p => [...p, TERM_LINES[i]])
+        if (i === 2) SKILLS.forEach((_, si) =>
+          setTimeout(() => setSkillCount(s => s + 1), si * 210 + 100))
+        if (i === animDelays.length - 1) resolve()
       }, d)
     })
-  }, [isLoggedIn, running, done])
+  })
+
+  const apiPromise = apiFetch('/predict/salary', {
+    method: 'POST',
+    body: JSON.stringify({ job_title: form.title, description: form.desc }),
+  }, token)
+
+  try {
+    // Attendre que LES DEUX soient finis
+    const [, data] = await Promise.all([animPromise, apiPromise])
+
+    setActiveStep(5)
+    setTermLines(p => [...p, `Prediction: ${data.predicted_salary_usd.toLocaleString()} USD`])
+    setTimeout(() => {
+      setActiveStep(999)
+      setTermLines(p => [...p, 'Pipeline complete.'])
+      setResult(data)
+      setRunning(false)
+      setDone(true)
+    }, 600)
+
+  } catch (err) {
+    setTermLines(p => [...p, `ERROR: ${err.message}`])
+    setRunning(false)
+  }
+}, [isLoggedIn, running, form, token])
 
   const inp = { width: '100%', background: 'transparent', border: 'none', borderBottom: `1px solid ${C.border}`, color: C.text, fontSize: '0.88rem', fontFamily: T.inter, fontWeight: 300, padding: '0.5rem 0', outline: 'none' }
   const fade = d => ({ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(38px)', transition: `all 0.9s cubic-bezier(0.16,1,0.3,1) ${d}s` })
@@ -527,7 +571,6 @@ function PredictionStudio({ isLoggedIn, setView }) {
       <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(circle, rgba(200,169,110,0.04) 1px, transparent 1px)`, backgroundSize: '24px 24px', pointerEvents: 'none' }} />
       <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
 
-        {/* Section header */}
         <div style={{ marginBottom: '5rem', ...fade(0) }}>
           <OutlineNum n="02" visible={inView} />
           <div style={{ fontFamily: T.inter, fontSize: '0.6rem', fontWeight: 300, letterSpacing: '0.38em', color: C.gold, marginBottom: '1rem', marginTop: '-0.5rem' }}>PREDICTION STUDIO</div>
@@ -537,15 +580,12 @@ function PredictionStudio({ isLoggedIn, setView }) {
           </h2>
         </div>
 
-        {/* Split */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3.5rem' }}>
 
-          {/* Left — trace */}
           <div style={{ background: C.white, border: `1px solid ${C.border}`, padding: '2.2rem', display: 'flex', flexDirection: 'column', ...fade(0.2), minHeight: '540px' }}>
-            <LiveTrace activeStep={activeStep} skillCount={skillCount} termLines={termLines} />
+            <LiveTrace activeStep={activeStep} skillCount={skillCount} termLines={termLines} realSkills={result?.skills_extracted} />
           </div>
 
-          {/* Right — form */}
           <div style={{ ...fade(0.35), display: 'flex', flexDirection: 'column' }}>
             <div style={{ background: C.white, border: `1px solid ${C.border}`, padding: '2.8rem' }}>
 
@@ -590,7 +630,7 @@ function PredictionStudio({ isLoggedIn, setView }) {
                 </div>
               )}
             </div>
-            <SalaryCard visible={done} />
+            <SalaryCard visible={done} salary={result?.predicted_salary_usd} skills={result?.skills_extracted} />
           </div>
         </div>
       </div>
@@ -599,7 +639,7 @@ function PredictionStudio({ isLoggedIn, setView }) {
 }
 
 /* ─────────────────────────────────────────────
-   SHARED AUTH INPUT
+   SHARED AUTH INPUT STYLE
 ───────────────────────────────────────────── */
 const authInp = {
   width: '100%', background: 'transparent', border: 'none',
@@ -609,11 +649,33 @@ const authInp = {
 }
 
 /* ─────────────────────────────────────────────
-   LOGIN PAGE
+   LOGIN PAGE — FIX BUG 1 : appel réel à l'API
 ───────────────────────────────────────────── */
 function LoginPage({ setView, onLogin }) {
-  const [email, setEmail] = useState(''), [pw, setPw] = useState(''), [show, setShow] = useState(false)
-  const sub = e => { e.preventDefault(); onLogin({ email }); setView('home') }
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const sub = async e => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password: pw }),
+      })
+      onLogin({ email, token: data.access_token })
+      setView('home')
+    } catch (err) {
+      setError(err.message || 'Email ou mot de passe incorrect')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5rem 2rem', backgroundImage: `radial-gradient(circle, rgba(200,169,110,0.04) 1px, transparent 1px)`, backgroundSize: '24px 24px' }}>
       <div style={{ maxWidth: '420px', width: '100%' }}>
@@ -645,9 +707,14 @@ function LoginPage({ setView, onLogin }) {
                 </button>
               </div>
             </div>
-            <button type="submit" style={{ width: '100%', padding: '1rem', background: C.gold, border: 'none', color: C.bg, fontFamily: T.inter, fontSize: '0.62rem', fontWeight: 500, letterSpacing: '0.25em', cursor: 'pointer', transition: 'all 0.25s' }}
-              onMouseEnter={e => e.currentTarget.style.background = C.goldLight}
-              onMouseLeave={e => e.currentTarget.style.background = C.gold}>SIGN IN</button>
+            {error && (
+              <p style={{ color: '#ef4444', fontFamily: T.inter, fontSize: '0.7rem', textAlign: 'center', marginBottom: '1rem', marginTop: '-1rem' }}>{error}</p>
+            )}
+            <button type="submit" disabled={loading} style={{ width: '100%', padding: '1rem', background: C.gold, border: 'none', color: C.bg, fontFamily: T.inter, fontSize: '0.62rem', fontWeight: 500, letterSpacing: '0.25em', cursor: loading ? 'wait' : 'pointer', transition: 'all 0.25s', opacity: loading ? 0.6 : 1 }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = C.goldLight }}
+              onMouseLeave={e => e.currentTarget.style.background = C.gold}>
+              {loading ? 'SIGNING IN...' : 'SIGN IN'}
+            </button>
           </form>
           <p style={{ textAlign: 'center', marginTop: '1.6rem', fontFamily: T.inter, fontSize: '0.72rem', fontWeight: 300, color: C.goldMuted }}>
             No account?{' '}
@@ -660,16 +727,41 @@ function LoginPage({ setView, onLogin }) {
 }
 
 /* ─────────────────────────────────────────────
-   REGISTER PAGE
+   REGISTER PAGE — FIX BUG 1 : appel réel à l'API
 ───────────────────────────────────────────── */
 function RegisterPage({ setView, onLogin }) {
-  const [name, setName] = useState(''), [email, setEmail] = useState('')
-  const [pw, setPw] = useState(''), [pw2, setPw2] = useState(''), [show, setShow] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
+  const [pw2, setPw2] = useState('')
+  const [show, setShow] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
   const str = pw.length === 0 ? 0 : pw.length < 6 ? 1 : pw.length < 10 ? 2 : 3
   const strCol = ['transparent', '#ef4444', '#f97316', C.gold][str]
   const strLbl = ['', 'WEAK', 'MEDIUM', 'STRONG'][str]
   const bad = pw2.length > 0 && pw !== pw2
-  const sub = e => { e.preventDefault(); if (bad || pw.length < 6) return; onLogin({ name, email }); setView('home') }
+
+  const sub = async e => {
+    e.preventDefault()
+    if (bad || pw.length < 8) return
+    setError('')
+    setLoading(true)
+    try {
+      await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, username: name, password: pw }),
+      })
+      onLogin({ name, email })
+      setView('home')
+    } catch (err) {
+      setError(err.message || 'Cet email ou username est déjà utilisé')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5rem 2rem', backgroundImage: `radial-gradient(circle, rgba(200,169,110,0.04) 1px, transparent 1px)`, backgroundSize: '24px 24px' }}>
       <div style={{ maxWidth: '420px', width: '100%' }}>
@@ -717,10 +809,15 @@ function RegisterPage({ setView, onLogin }) {
               <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} required placeholder="Repeat password" style={{ ...authInp, borderBottomColor: bad ? '#ef4444' : '#E8DCC8' }} />
               {bad && <span style={{ fontFamily: T.inter, fontSize: '0.6rem', color: '#ef4444', marginTop: '0.3rem', display: 'block' }}>Passwords do not match</span>}
             </div>
-            <button type="submit" disabled={bad || pw.length < 6}
-              style={{ width: '100%', padding: '1rem', background: C.gold, border: 'none', color: C.bg, fontFamily: T.inter, fontSize: '0.62rem', fontWeight: 500, letterSpacing: '0.25em', cursor: bad || pw.length < 6 ? 'not-allowed' : 'pointer', transition: 'all 0.25s', opacity: bad || pw.length < 6 ? 0.45 : 1 }}
-              onMouseEnter={e => { if (!bad && pw.length >= 6) e.currentTarget.style.background = C.goldLight }}
-              onMouseLeave={e => e.currentTarget.style.background = C.gold}>CREATE ACCOUNT</button>
+            {error && (
+              <p style={{ color: '#ef4444', fontFamily: T.inter, fontSize: '0.7rem', textAlign: 'center', marginBottom: '1rem', marginTop: '-1rem' }}>{error}</p>
+            )}
+            <button type="submit" disabled={bad || pw.length < 8 || loading}
+              style={{ width: '100%', padding: '1rem', background: C.gold, border: 'none', color: C.bg, fontFamily: T.inter, fontSize: '0.62rem', fontWeight: 500, letterSpacing: '0.25em', cursor: bad || pw.length < 8 || loading ? 'not-allowed' : 'pointer', transition: 'all 0.25s', opacity: bad || pw.length < 8 || loading ? 0.45 : 1 }}
+              onMouseEnter={e => { if (!bad && pw.length >= 8 && !loading) e.currentTarget.style.background = C.goldLight }}
+              onMouseLeave={e => e.currentTarget.style.background = C.gold}>
+              {loading ? 'CREATING...' : 'CREATE ACCOUNT'}
+            </button>
           </form>
           <p style={{ textAlign: 'center', marginTop: '1.6rem', fontFamily: T.inter, fontSize: '0.72rem', fontWeight: 300, color: C.goldMuted }}>
             Already registered?{' '}
@@ -808,19 +905,14 @@ function Footer() {
 }
 
 /* ─────────────────────────────────────────────
-   ROOT APP
-───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
    SCROLL BACKGROUND HOOK
-   Smoothly interpolates a warm hue between
-   section colour stops as the user scrolls.
 ───────────────────────────────────────────── */
 const BG_STOPS = [
-  { pct: 0, color: [250, 246, 238] }, // #FAF6EE  hero
-  { pct: 0.22, color: [245, 239, 224] }, // #F5EFE0  pipeline
-  { pct: 0.48, color: [239, 232, 216] }, // #EFE8D8  prediction
-  { pct: 0.72, color: [232, 223, 200] }, // #E8DFC8  tech
-  { pct: 1, color: [221, 208, 176] }, // #DDD0B0  footer
+  { pct: 0,    color: [250, 246, 238] },
+  { pct: 0.22, color: [245, 239, 224] },
+  { pct: 0.48, color: [239, 232, 216] },
+  { pct: 0.72, color: [232, 223, 200] },
+  { pct: 1,    color: [221, 208, 176] },
 ]
 
 function lerp(a, b, t) { return a + (b - a) * t }
@@ -856,6 +948,9 @@ function useScrollBg() {
   }, [])
 }
 
+/* ─────────────────────────────────────────────
+   ROOT APP
+───────────────────────────────────────────── */
 export default function App() {
   useFonts()
   useScrollBg()
@@ -877,7 +972,7 @@ export default function App() {
       {view === 'home' && <>
         <Hero />
         <PipelineSection />
-        <PredictionStudio isLoggedIn={isLoggedIn} setView={setView} />
+        <PredictionStudio isLoggedIn={isLoggedIn} setView={setView} token={user?.token} />
         <TechStack />
         <Footer />
       </>}
